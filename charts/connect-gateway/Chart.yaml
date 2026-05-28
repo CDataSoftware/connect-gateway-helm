@@ -19,3 +19,7 @@ maintainers:
   - name: CData Software
     email: support@cdata.com
     url: https://www.cdata.com
+annotations:
+  artifacthub.io/changes: |
+    - kind: added
+      description: Initial public release of the Connect Gateway Helm chart.
