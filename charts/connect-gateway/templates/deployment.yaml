@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: connect-gateway
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "connect-gateway.labels" (dict "component" "connect-gateway" "context" .) | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "connect-gateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "connect-gateway.labels" (dict "component" "connect-gateway" "context" .) | nindent 8 }}
+    spec:
+      {{- include "connect-gateway.topologySpread" . | nindent 6 }}
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      containers:
+        - name: connect-gateway
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.containerPort }}
+              protocol: TCP
+            - name: management
+              containerPort: {{ .Values.service.managementPort }}
+              protocol: TCP
+          env:
+            # --- Required ---
+            - name: GATEWAY_LOCATION_ID
+              value: {{ required "gateway.locationId is required" .Values.gateway.locationId | quote }}
+            - name: ACCOUNT_ID
+              value: {{ required "gateway.accountId is required" .Values.gateway.accountId | quote }}
+            - name: GATEWAY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "connect-gateway.secretName" . }}
+                  key: gateway-api-key
+            - name: GATEWAY_REGISTRATION_URL
+              value: {{ .Values.gateway.registrationUrl | quote }}
+            # --- Relay tuning ---
+            - name: RELAY_CONNECTION_TIMEOUT
+              value: {{ .Values.relay.connectionTimeoutSeconds | quote }}
+            - name: RELAY_AUTO_RECONNECT
+              value: {{ .Values.relay.autoReconnect | quote }}
+            - name: RELAY_RECONNECT_DELAY
+              value: {{ .Values.relay.reconnectDelaySeconds | quote }}
+            - name: RELAY_MAX_RECONNECT_ATTEMPTS
+              value: {{ .Values.relay.maxReconnectAttempts | quote }}
+            # --- Logging ---
+            {{- if .Values.logging.profile }}
+            - name: SPRING_PROFILES_ACTIVE
+              value: {{ .Values.logging.profile | quote }}
+            {{- end }}
+            - name: LOGGING_LEVEL_CDATA_CONNECT_SOCKSRELAYAGENT
+              value: {{ .Values.logging.agentLevel | quote }}
+          readinessProbe:
+            {{- toYaml .Values.probes.readiness | nindent 12 }}
+          livenessProbe:
+            {{- toYaml .Values.probes.liveness | nindent 12 }}
+          startupProbe:
+            {{- toYaml .Values.probes.startup | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- include "connect-gateway.securityContext" . | nindent 10 }}
+          {{- include "connect-gateway.preStopSleep" . | nindent 10 }}
+      terminationGracePeriodSeconds: 30

@@ -1,0 +1,5 @@
+# chart-releaser config (https://github.com/helm/chart-releaser)
+# Single-chart repo — use plain `v<version>` tags (matches CData Software convention).
+# If a second chart is ever added under charts/, switch back to the default
+# `{{ .Name }}-{{ .Version }}` template to avoid tag collisions.
+release-name-template: "v{{ .Version }}"

@@ -1,0 +1,109 @@
+image:
+  repository: connectaipublic.azurecr.io/connectgateway
+  # When empty, defaults to Chart.appVersion (single source of truth for the
+  # gateway build the chart targets). Override only to test a different image tag.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# The agent is a pure async I/O relay (Kotlin coroutines). CPU stays near zero
+# regardless of connection load — CPU-based autoscaling is not effective.
+# Each replica adds one Azure Relay listener; increase replicaCount for higher
+# concurrent connection capacity or for extra HA redundancy.
+# Minimum recommended: 2 (one per availability zone for resilience).
+replicaCount: 2
+
+# Required gateway credentials
+gateway:
+  locationId: ""
+  accountId: ""
+  # Pass plain text — chart creates the Secret automatically.
+  # Alternatively leave empty and set existingSecret to use a pre-existing Secret.
+  apiKey: ""
+  # Registration URL for the Connect AI Agent API
+  registrationUrl: "https://cloud.cdata.com"
+
+# Use a pre-existing Secret instead of letting the chart create one.
+# Ignored when gateway.apiKey is set.
+# The Secret must contain key: gateway-api-key
+existingSecret: ""
+
+service:
+  type: ClusterIP
+  port: 80
+  containerPort: 8490     # Main HTTP port (server.port in application.yml)
+  managementPort: 8491    # Spring Boot management/actuator port
+
+# Relay tuning — connection details are provided automatically by the registration API.
+relay:
+  connectionTimeoutSeconds: 30
+  autoReconnect: true
+  reconnectDelaySeconds: 5
+  maxReconnectAttempts: 0   # 0 = unlimited
+
+# Logging
+logging:
+  # Spring profile — set to "prod" to enable JSON/Logstash structured logging
+  profile: ""
+  # Override log level for agent classes, e.g. DEBUG for troubleshooting
+  agentLevel: "INFO"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    cpu: 500m
+    memory: 2Gi
+
+probes:
+  readiness:
+    httpGet:
+      path: /actuator/health/readiness
+      port: 8491
+    initialDelaySeconds: 15
+    periodSeconds: 15
+    failureThreshold: 3
+  liveness:
+    httpGet:
+      path: /actuator/health/liveness
+      port: 8491
+    initialDelaySeconds: 20
+    periodSeconds: 20
+    failureThreshold: 3
+  startup:
+    httpGet:
+      path: /actuator/health
+      port: 8491
+    failureThreshold: 30
+    periodSeconds: 5
+
+# HPA scales on memory — more meaningful than CPU for an async I/O relay.
+# Memory grows with concurrent active connections (coroutine stacks, I/O buffers).
+# Target is set at 80% of the 512Mi request (~410Mi), leaving ~180Mi headroom
+# above the JVM idle baseline (~230Mi) before a new pod is added.
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetMemoryUtilizationPercentage: 80
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# Topology spread — distributes pods across availability zones.
+# Disable on single-node clusters or on-prem environments without zone labels.
+# topologyKey uses the standard Kubernetes zone label supported by AKS, EKS, GKE, and
+# most on-prem distributions. Set to "kubernetes.io/hostname" to spread across nodes instead.
+topologySpread:
+  enabled: true
+  topologyKey: topology.kubernetes.io/zone
+
+serviceAccount:
+  create: true
+  name: "connect-gateway"
+  # Optional annotations — use for cloud-provider identity binding, e.g.:
+  #   Azure Workload Identity: azure.workload.identity/client-id: "<client-id>"
+  #   AWS IRSA:                eks.amazonaws.com/role-arn: "arn:aws:iam::<account>:role/<role>"
+  #   GCP Workload Identity:   iam.gke.io/gcp-service-account: "<sa>@<project>.iam.gserviceaccount.com"
+  annotations: {}

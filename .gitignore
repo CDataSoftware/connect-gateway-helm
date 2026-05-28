@@ -1,0 +1,20 @@
+# Helm
+*.tgz
+charts/*/charts/
+charts/*/Chart.lock
+
+# Local overrides
+values.local.yaml
+.values.yaml.swp
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# CI scratch
+.cr-release-packages/
+.cr-index/

@@ -1,0 +1,114 @@
+CData Connect Gateway has been deployed.
+Documentation: https://docs.cloud.cdata.com/en/Connect-Gateway
+
+Release : {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Image    : {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+
+=============================================================================
+SECRET MANAGEMENT
+=============================================================================
+{{- if .Values.gateway.apiKey }}
+
+** WARNING: gateway.apiKey was passed as a plain-text Helm value. **
+   It is now stored in the Helm release history and visible via:
+     helm get values {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+   Secret '{{ .Release.Name }}-credentials' was created by this chart.
+
+   For production, prefer one of the approaches below instead.
+{{- else }}
+Using pre-existing secret : {{ .Values.existingSecret }}
+Ensure it exists in namespace {{ .Release.Namespace }} with key: gateway-api-key
+{{- end }}
+
+-----------------------------------------------------------------------------
+RECOMMENDED APPROACHES FOR PRODUCTION SECRET HANDLING
+-----------------------------------------------------------------------------
+
+1. HELM --set-file (simplest improvement over --set)
+   Store the API key in a local file, never on the command line:
+
+     echo -n "<api-key>" > /tmp/gateway-api-key.txt
+     helm install {{ .Release.Name }} cdata/connect-gateway \
+       --set-file gateway.apiKey=/tmp/gateway-api-key.txt \
+       --set gateway.locationId=<location-id> \
+       --set gateway.accountId=<account-id> \
+       -n {{ .Release.Namespace }}
+     rm /tmp/gateway-api-key.txt
+
+2. PRE-CREATE THE SECRET (recommended for GitOps / CI-CD)
+   Create the secret out-of-band and reference it:
+
+     kubectl create secret generic <secret-name> \
+       --from-literal=gateway-api-key=<api-key> \
+       -n {{ .Release.Namespace }}
+
+     helm install {{ .Release.Name }} cdata/connect-gateway \
+       --set gateway.locationId=<location-id> \
+       --set gateway.accountId=<account-id> \
+       --set existingSecret=<secret-name> \
+       -n {{ .Release.Namespace }}
+
+   The chart will NOT create or manage a Secret in this mode.
+
+3. EXTERNAL SECRETS OPERATOR (ESO) — AWS Secrets Manager / Azure Key Vault / GCP SM
+   Sync secrets from your cloud vault into Kubernetes automatically:
+
+     apiVersion: external-secrets.io/v1beta1
+     kind: ExternalSecret
+     metadata:
+       name: connect-gateway-secret
+       namespace: {{ .Release.Namespace }}
+     spec:
+       refreshInterval: 1h
+       secretStoreRef:
+         name: <your-secret-store>
+         kind: ClusterSecretStore
+       target:
+         name: connect-gateway-secret
+       data:
+         - secretKey: gateway-api-key
+           remoteRef:
+             key: <path/to/secret>
+
+     Then set: --set existingSecret=connect-gateway-secret
+
+4. SEALED SECRETS (GitOps-safe encrypted secrets in git)
+   Encrypt the secret with kubeseal before committing:
+
+     kubectl create secret generic connect-gateway-secret \
+       --from-literal=gateway-api-key=<api-key> \
+       --dry-run=client -o yaml \
+     | kubeseal --format yaml > sealed-secret.yaml
+
+     # Commit sealed-secret.yaml to git — safe, encrypted at rest
+     # Then set: --set existingSecret=connect-gateway-secret
+
+5. VAULT AGENT INJECTOR (HashiCorp Vault)
+   Inject secrets directly into the pod without storing them in Kubernetes:
+
+     # Annotate the deployment (via values.yaml podAnnotations) and let
+     # Vault Agent inject the secret as an environment variable or file.
+     # See: https://developer.hashicorp.com/vault/docs/platform/k8s/injector
+
+=============================================================================
+VERIFY DEPLOYMENT
+=============================================================================
+
+  kubectl get pods -l app.component=connect-gateway -n {{ .Release.Namespace }}
+  kubectl logs -l app.component=connect-gateway -n {{ .Release.Namespace }} --tail=50
+
+=============================================================================
+SCALING
+=============================================================================
+{{- if .Values.hpa.enabled }}
+HPA enabled  : {{ .Values.hpa.minReplicas }}–{{ .Values.hpa.maxReplicas }} replicas
+Memory target: {{ .Values.hpa.targetMemoryUtilizationPercentage }}%
+{{- else }}
+HPA is disabled. Fixed replica count: {{ .Values.replicaCount }}.
+To enable: --set hpa.enabled=true
+{{- end }}
+{{- if .Values.pdb.enabled }}
+PodDisruptionBudget: minAvailable={{ .Values.pdb.minAvailable }}
+{{- end }}
