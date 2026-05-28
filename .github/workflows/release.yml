@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'charts/**'
+      - '!charts/**/*.md'
       - '.github/workflows/release.yml'
       - 'cr.yaml'
   workflow_dispatch:
