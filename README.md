@@ -10,11 +10,24 @@ Helm charts for the [CData Connect Gateway](https://docs.cloud.cdata.com/en/Conn
 
 ## Usage
 
+Add the Helm repository and install:
+
 ```bash
 helm repo add cdata https://cdatasoftware.github.io/connect-gateway-helm
 helm repo update
 
 helm install connect-gateway cdata/connect-gateway \
+  --set gateway.locationId=<location-id> \
+  --set gateway.accountId=<account-id> \
+  --set gateway.apiKey=<api-key> \
+  -n connect-gateway --create-namespace
+```
+
+Or install directly from a [GitHub release](https://github.com/CDataSoftware/connect-gateway-helm/releases) (useful for air-gapped environments or when you don't want to add a Helm repo):
+
+```bash
+helm install connect-gateway \
+  https://github.com/CDataSoftware/connect-gateway-helm/releases/download/v1.0.0/connect-gateway-1.0.0.tgz \
   --set gateway.locationId=<location-id> \
   --set gateway.accountId=<account-id> \
   --set gateway.apiKey=<api-key> \

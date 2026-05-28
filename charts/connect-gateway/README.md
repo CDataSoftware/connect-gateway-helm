@@ -14,22 +14,35 @@ The Connect Gateway runs as an agent inside your infrastructure and establishes 
 
 ## Installation
 
-### Add the Helm repository
+You can install the chart two ways. Pick whichever fits your workflow.
+
+### Option A: Add the Helm repository (recommended)
 
 ```bash
 helm repo add cdata https://cdatasoftware.github.io/connect-gateway-helm
 helm repo update
-```
 
-### Quick start
-
-```bash
 helm install connect-gateway cdata/connect-gateway \
   --set gateway.locationId=<location-id> \
   --set gateway.accountId=<account-id> \
   --set gateway.apiKey=<api-key> \
   -n connect-gateway --create-namespace
 ```
+
+### Option B: Install directly from the GitHub release
+
+Useful for air-gapped environments, pinning to an exact version, or when you don't want to add a Helm repo.
+
+```bash
+helm install connect-gateway \
+  https://github.com/CDataSoftware/connect-gateway-helm/releases/download/v1.0.0/connect-gateway-1.0.0.tgz \
+  --set gateway.locationId=<location-id> \
+  --set gateway.accountId=<account-id> \
+  --set gateway.apiKey=<api-key> \
+  -n connect-gateway --create-namespace
+```
+
+> Replace `v1.0.0` / `1.0.0` with the version you want from the [releases page](https://github.com/CDataSoftware/connect-gateway-helm/releases). To upgrade later, point at the newer release URL.
 
 > **Note:** Passing `gateway.apiKey` via `--set` stores it in Helm release history.
 > See [Secret Management](#secret-management) for production-safe alternatives.
@@ -186,9 +199,22 @@ serviceAccount:
 
 ## Upgrading
 
+If installed via the Helm repository:
+
 ```bash
 helm repo update
 helm upgrade connect-gateway cdata/connect-gateway \
+  --set gateway.locationId=<location-id> \
+  --set gateway.accountId=<account-id> \
+  --set existingSecret=connect-gateway-secret \
+  -n connect-gateway
+```
+
+If installed from a release tarball, point at the newer release URL:
+
+```bash
+helm upgrade connect-gateway \
+  https://github.com/CDataSoftware/connect-gateway-helm/releases/download/v<new-version>/connect-gateway-<new-version>.tgz \
   --set gateway.locationId=<location-id> \
   --set gateway.accountId=<account-id> \
   --set existingSecret=connect-gateway-secret \
