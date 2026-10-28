@@ -1,8 +1,8 @@
 apiVersion: v2
 name: connect-gateway
 type: application
-version: 1.0.0
-appVersion: "1.0.44"
+version: 1.0.1
+appVersion: "1.0.118"
 description: Helm chart for the CData Connect Gateway — a secure outbound agent that lets CData Connect AI query private data sources without inbound firewall rules.
 icon: https://www.cdata.com/ui/brand-assets/logos/products/connectai/cdata-connectai-logo-black.svg
 home: https://www.cdata.com/ai/
@@ -21,5 +21,5 @@ maintainers:
     url: https://www.cdata.com
 annotations:
   artifacthub.io/changes: |
-    - kind: added
-      description: Initial public release of the Connect Gateway Helm chart.
+    - kind: changed
+      description: Default image updated to Connect Gateway 1.0.118, which includes trust store updates.
