@@ -3,6 +3,37 @@ entries:
   connect-gateway:
   - annotations:
       artifacthub.io/changes: |
+        - kind: changed
+          description: Default image updated to Connect Gateway 1.0.118, which includes trust store updates.
+    apiVersion: v2
+    appVersion: 1.0.118
+    created: "2026-10-28T12:01:41.116508443Z"
+    description: Helm chart for the CData Connect Gateway — a secure outbound agent
+      that lets CData Connect AI query private data sources without inbound firewall
+      rules.
+    digest: 41f134f14e88a316d21c5bc20405178657849744eda8e6a605762024c03dc341
+    home: https://www.cdata.com/ai/
+    icon: https://www.cdata.com/ui/brand-assets/logos/products/connectai/cdata-connectai-logo-black.svg
+    keywords:
+    - cdata
+    - connect-gateway
+    - connect-ai
+    - data-connectivity
+    - agent
+    - relay
+    maintainers:
+    - email: support@cdata.com
+      name: CData Software
+      url: https://www.cdata.com
+    name: connect-gateway
+    sources:
+    - https://github.com/CDataSoftware/connect-gateway-helm
+    type: application
+    urls:
+    - https://github.com/CDataSoftware/connect-gateway-helm/releases/download/v1.0.1/connect-gateway-1.0.1.tgz
+    version: 1.0.1
+  - annotations:
+      artifacthub.io/changes: |
         - kind: added
           description: Initial public release of the Connect Gateway Helm chart.
     apiVersion: v2
@@ -32,4 +63,4 @@ entries:
     urls:
     - https://github.com/CDataSoftware/connect-gateway-helm/releases/download/v1.0.0/connect-gateway-1.0.0.tgz
     version: 1.0.0
-generated: "2026-05-28T15:59:25.33232498Z"
+generated: "2026-10-28T12:01:41.116518258Z"
